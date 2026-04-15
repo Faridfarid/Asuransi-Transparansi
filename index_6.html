@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AsuransiTransparan — Deteksi Biaya Tersembunyi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root {
+  --bg: #f7f6f2;
+  --white: #ffffff;
+  --surface: #fafaf8;
+  --border: #e8e5df;
+  --border2: #d4cfc7;
+  --red: #c8321a;
+  --red-light: #fff0ed;
+  --red-mid: #ffd9d2;
+  --amber: #d97706;
+  --amber-light: #fffbeb;
+  --green: #15803d;
+  --green-light: #f0fdf4;
+  --text: #1a1714;
+  --text2: #4a4540;
+  --muted: #9a9390;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  min-height: 100vh;
+}
+
+/* subtle dot pattern */
+body::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image: radial-gradient(circle, #c8321a08 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+.header { margin-bottom: 40px; }
+
+.header-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 8px;
+}
+
+.logo-area {}
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--red); margin-bottom: 12px;
+}
+.eyebrow-line { width: 20px; height: 1.5px; background: var(--red); }
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(30px, 5.5vw, 48px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.08;
+  color: var(--text);
+}
+h1 em { color: var(--red); font-style: normal; }
+
+.tagline {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: .01em;
+}
+
+.stats-row {
+  display: flex; gap: 1px; margin-top: 28px;
+  background: var(--border); border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.stat {
+  flex: 1; background: var(--white); padding: 14px 18px; text-align: center;
+}
+.stat-val { font-size: 20px; font-weight: 700; color: var(--red); font-family: 'Playfair Display', serif; }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-top: 2px; }
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.card-head {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; background: var(--surface);
+}
+.card-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.card-body { padding: 24px; }
+
+/* ── TYPE CHIPS ── */
+.type-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 10px; letter-spacing: .02em; }
+.type-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.type-chip {
+  padding: 7px 16px; font-size: 12px; font-weight: 500;
+  font-family: inherit; border: 1.5px solid var(--border2);
+  border-radius: 100px; background: var(--white); color: var(--text2);
+  cursor: pointer; transition: all .15s;
+}
+.type-chip:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.type-chip.on { border-color: var(--red); color: var(--red); background: var(--red-light); font-weight: 600; }
+
+/* ── PDF DROP ZONE ── */
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 12px;
+  padding: 52px 24px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface);
+  transition: all .2s;
+  position: relative;
+}
+.drop-zone:hover, .drop-zone.over {
+  border-color: var(--red);
+  background: var(--red-light);
+}
+.drop-zone.has-file {
+  border-color: var(--green);
+  background: var(--green-light);
+  border-style: solid;
+}
+.drop-icon {
+  width: 52px; height: 52px; margin: 0 auto 14px;
+  background: var(--red-light); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; transition: all .2s;
+}
+.drop-zone.has-file .drop-icon { background: var(--green-light); }
+.drop-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.drop-sub { font-size: 12px; color: var(--muted); }
+.drop-sub span { color: var(--red); font-weight: 600; }
+.drop-zone.has-file .drop-title { color: var(--green); }
+.drop-zone.has-file .drop-sub { color: #166534; }
+
+.file-info {
+  display: none;
+  align-items: center; gap: 10px; justify-content: center;
+  margin-top: 12px; font-size: 12px; color: var(--green);
+  font-weight: 600;
+}
+.file-info.show { display: flex; }
+.file-remove {
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; color: var(--muted); line-height: 1;
+  padding: 0 4px; transition: color .15s;
+}
+.file-remove:hover { color: var(--red); }
+
+/* ── TEXT FALLBACK ── */
+.or-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0; color: var(--muted); font-size: 12px;
+}
+.or-divider::before, .or-divider::after {
+  content:''; flex:1; height:1px; background: var(--border);
+}
+
+textarea {
+  width: 100%; min-height: 160px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-family: inherit; font-size: 13px; line-height: 1.7;
+  padding: 14px 16px; resize: vertical; outline: none;
+  transition: border-color .2s;
+}
+textarea:focus { border-color: var(--red); background: var(--white); }
+textarea::placeholder { color: var(--muted); }
+
+/* ── BUTTON ── */
+.btn {
+  width: 100%; padding: 16px;
+  background: var(--red); color: #fff; border: none; border-radius: 10px;
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  letter-spacing: .02em; cursor: pointer; margin-top: 20px;
+  transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn:hover:not(:disabled) {
+  background: #b02a14;
+  box-shadow: 0 8px 24px rgba(200,50,26,0.25);
+  transform: translateY(-1px);
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+.spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+  animation: spin .7s linear infinite; flex-shrink: 0;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── ERROR ── */
+.error-box {
+  background: var(--red-light); border: 1px solid var(--red-mid);
+  border-radius: 8px; padding: 12px 16px; font-size: 13px;
+  color: var(--red); margin-top: 14px; font-weight: 500;
+}
+
+/* ── RESULTS ── */
+.result-header {
+  display: grid; grid-template-columns: 180px 1fr; gap: 16px; margin-bottom: 16px;
+}
+@media(max-width:560px){ .result-header{grid-template-columns:1fr;} }
+
+.score-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow); padding: 24px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.score-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.verdict {
+  font-size: 12px; font-weight: 700; padding: 5px 14px;
+  border-radius: 100px; letter-spacing: .04em; text-transform: uppercase;
+}
+
+.summary-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow); padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.summary-title { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.summary-text { font-size: 14px; color: var(--text2); line-height: 1.75; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.meta-tag {
+  font-size: 11px; font-weight: 600; padding: 4px 12px;
+  border-radius: 100px; border: 1px solid var(--border2); color: var(--text2);
+  background: var(--surface);
+}
+.meta-tag.danger { color: var(--red); background: var(--red-light); border-color: var(--red-mid); }
+
+/* findings */
+.finding {
+  border: 1px solid var(--border); border-left: 4px solid;
+  border-radius: 10px; padding: 16px 18px; margin-bottom: 10px;
+  background: var(--white);
+}
+.finding-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.risk-pill {
+  font-size: 10px; font-weight: 700; padding: 3px 10px;
+  border-radius: 100px; letter-spacing: .08em;
+}
+.finding-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.finding-desc { font-size: 13px; color: var(--text2); line-height: 1.65; margin-bottom: 10px; }
+.finding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:500px){ .finding-grid{grid-template-columns:1fr;} }
+.sub-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.sub-label { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.sub-val { font-size: 12px; line-height: 1.5; color: var(--text2); }
+
+/* table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+th {
+  padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  border-bottom: 2px solid var(--border); background: var(--surface);
+}
+td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface); }
+.status-pill {
+  font-size: 10px; font-weight: 700; padding: 3px 10px;
+  border-radius: 100px; letter-spacing: .06em;
+}
+
+/* questions */
+.q-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;
+}
+.q-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--red-light); color: var(--red);
+  font-size: 11px; font-weight: 800; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.q-text { font-size: 13px; color: var(--text2); line-height: 1.6; padding-top: 2px; }
+
+footer {
+  margin-top: 52px; text-align: center;
+  font-size: 11px; color: var(--muted); line-height: 1.9;
+}
+
+.fade-in { animation: fadeUp .45s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+
+/* loading bar */
+.loading-bar {
+  height: 3px; background: var(--border); border-radius: 2px;
+  overflow: hidden; margin-top: 16px; display: none;
+}
+.loading-bar.show { display: block; }
+.loading-fill {
+  height: 100%; background: linear-gradient(90deg, var(--red), #ff7a5c, var(--red));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  width: 100%;
+}
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+.loading-status {
+  font-size: 12px; color: var(--muted); text-align: center;
+  margin-top: 8px; min-height: 18px; transition: opacity .3s;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="header fade-in">
+    <div class="header-top">
+      <div class="logo-area">
+        <div class="eyebrow"><span class="eyebrow-line"></span>Beta · Indonesia</div>
+        <h1>Asuransi<em>Transparan</em></h1>
+        <p class="tagline">Deteksi biaya tersembunyi di polis asuransi Indonesia</p>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">7</div><div class="stat-label">Jenis Polis</div></div>
+      <div class="stat"><div class="stat-val">PDF</div><div class="stat-label">Upload Langsung</div></div>
+      <div class="stat"><div class="stat-val">AI</div><div class="stat-label">Powered by Gemini</div></div>
+      <div class="stat"><div class="stat-val">Free</div><div class="stat-label">Tanpa Biaya</div></div>
+    </div>
+  </header>
+
+  <!-- INPUT CARD -->
+  <div class="card fade-in" style="animation-delay:.1s">
+    <div class="card-head">
+      <div class="card-title"><span class="card-title-dot"></span>Upload Dokumen Polis</div>
+    </div>
+    <div class="card-body">
+
+      <!-- Type selector -->
+      <div class="type-label">Jenis Produk Asuransi</div>
+      <div class="type-grid" id="typeGrid"></div>
+
+      <!-- PDF Drop Zone -->
+      <div class="drop-zone" id="dropZone"
+        onclick="document.getElementById('pdfInput').click()"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="handleDrop(event)">
+        <input type="file" id="pdfInput" accept=".pdf" style="display:none" onchange="handleFile(this.files[0])">
+        <div class="drop-icon" id="dropIcon">📄</div>
+        <div class="drop-title" id="dropTitle">Upload File PDF Polis</div>
+        <div class="drop-sub" id="dropSub">Drag & drop atau <span>klik untuk pilih</span> file PDF</div>
+      </div>
+      <div class="file-info" id="fileInfo">
+        <span id="fileName">—</span>
+        <button class="file-remove" onclick="removeFile(event)" title="Hapus file">✕</button>
+      </div>
+
+      <!-- OR divider + text fallback -->
+      <div class="or-divider">atau ketik / paste teks polis secara manual</div>
+      <textarea id="policyText" placeholder="Paste ringkasan polis, brosur produk, atau deskripsi asuransi di sini...
+
+Contoh:
+• Premi Rp 1.000.000/bulan, masa kontrak 10 tahun
+• Biaya akuisisi tahun 1 = 75% dari premi
+• Biaya administrasi Rp 50.000/bulan
+• Nilai tunai baru ada di tahun ke-3"></textarea>
+
+      <div id="errorBox" class="error-box" style="display:none"></div>
+
+      <button class="btn" id="analyzeBtn" onclick="analyze()">
+        <span id="btnIcon">🔍</span>
+        <span id="btnText">Analisis Polis Sekarang</span>
+      </button>
+      <div class="loading-bar" id="loadingBar"><div class="loading-fill"></div></div>
+      <div class="loading-status" id="loadingStatus"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results"></div>
+
+  <footer>
+    AsuransiTransparan &middot; Powered by Claude AI (Anthropic) &middot; Gratis<br>
+    Bukan pengganti konsultasi profesional advisor terdaftar OJK.
+  </footer>
+</div>
+
+<script>
+// ─── GANTI DENGAN CLAUDE API KEY ANDA ───────────────────────────
+const CLAUDE_API_KEY = 'GANTI_DENGAN_API_KEY_ANDA';
+// ────────────────────────────────────────────────────────────────
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; // JANGAN GANTI BARIS INI
+
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+const POLICY_TYPES = ["Unit Link","Whole Life / Tradisional","Term Life","Kesehatan","Kendaraan","Jiwa Kredit","BPJS Tambahan"];
+let selectedType = "Unit Link";
+var pdfText = '';
+
+// Build type chips
+const tg = document.getElementById('typeGrid');
+POLICY_TYPES.forEach(t => {
+  const b = document.createElement('button');
+  b.className = 'type-chip' + (t === selectedType ? ' on' : '');
+  b.textContent = t;
+  b.onclick = () => {
+    selectedType = t;
+    document.querySelectorAll('.type-chip').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  };
+  tg.appendChild(b);
+});
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') handleFile(file);
+  else showErr('Hanya file PDF yang diterima.');
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  const dz = document.getElementById('dropZone');
+  document.getElementById('dropIcon').textContent = '⏳';
+  document.getElementById('dropTitle').textContent = 'Membaca PDF...';
+  document.getElementById('dropSub').innerHTML = file.name;
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(s => s.str).join(' ') + '\n';
+    }
+    pdfText = text.trim();
+    dz.classList.add('has-file');
+    document.getElementById('dropIcon').textContent = '✅';
+    document.getElementById('dropTitle').textContent = 'PDF berhasil dibaca';
+    document.getElementById('dropSub').innerHTML = `${file.name} · ${pdf.numPages} halaman`;
+    const fi = document.getElementById('fileInfo');
+    document.getElementById('fileName').textContent = file.name;
+    fi.classList.add('show');
+  } catch(e) {
+    showErr('Gagal membaca PDF: ' + e.message);
+    resetDropZone();
+  }
+}
+
+function removeFile(e) {
+  e.stopPropagation();
+  pdfText = '';
+  document.getElementById('pdfInput').value = '';
+  document.getElementById('fileInfo').classList.remove('show');
+  resetDropZone();
+}
+
+function resetDropZone() {
+  const dz = document.getElementById('dropZone');
+  dz.classList.remove('has-file','over');
+  document.getElementById('dropIcon').textContent = '📄';
+  document.getElementById('dropTitle').textContent = 'Upload File PDF Polis';
+  document.getElementById('dropSub').innerHTML = 'Drag & drop atau <span>klik untuk pilih</span> file PDF';
+}
+
+const LOADING = [
+  "Membaca klausul polis...","Mendeteksi biaya akuisisi...",
+  "Menganalisis surrender charge...","Memeriksa exclusion clause...",
+  "Menghitung total beban biaya...","Menyusun laporan transparansi..."
+];
+
+const PROMPT = (type, text) => `Kamu adalah analis asuransi senior Indonesia yang ahli mendeteksi biaya tersembunyi dan klausul merugikan nasabah dalam polis asuransi Indonesia.
+
+Analisis polis berikut dan hasilkan laporan HANYA dalam format JSON murni (tanpa teks lain, tanpa markdown fence):
+
+{
+  "ringkasan": "2-3 kalimat ringkasan polis dan tingkat transparansinya",
+  "skor_transparansi": <angka 0-100>,
+  "jenis_produk": "<nama produk>",
+  "total_biaya_persen": <estimasi % premi yang menjadi biaya, angka saja>,
+  "temuan": [
+    {
+      "kategori": "<nama biaya atau klausul>",
+      "risiko": "<TINGGI|SEDANG|RENDAH>",
+      "deskripsi": "<penjelasan singkat>",
+      "dampak": "<dampak finansial konkret ke nasabah>",
+      "rekomendasi": "<saran tindakan>"
+    }
+  ],
+  "cek_biaya": [
+    { "nama": "<jenis biaya>", "wajar": "<range wajar industri Indonesia>", "terdeteksi": "<nilai yang ditemukan atau Tidak disebutkan>", "status": "<OK|PERHATIAN|BAHAYA>" }
+  ],
+  "pertanyaan_agen": ["<pertanyaan 1>","<pertanyaan 2>","<pertanyaan 3>","<pertanyaan 4>","<pertanyaan 5>"],
+  "kesimpulan": "<Layak|Perlu Negosiasi|Hindari>"
+}
+
+Jenis polis: ${type}
+Isi polis:
+${text.substring(0, 12000)}`;
+
+async function analyze() {
+  const manualText = document.getElementById('policyText').value.trim();
+  const finalText = pdfText || manualText;
+  const errBox = document.getElementById('errorBox');
+  errBox.style.display = 'none';
+
+  if (CLAUDE_API_KEY === 'GANTI_DENGAN_API_KEY_ANDA') return showErr('API Key belum diisi.');
+  if (!finalText) return showErr('Upload file PDF atau ketik teks polis terlebih dahulu.');
+
+  setLoading(true);
+  let mi = 0;
+  setStatus(LOADING[0]);
+  const iv = setInterval(() => { mi=(mi+1)%LOADING.length; setStatus(LOADING[mi]); }, 1900);
+
+  try {
+    const res = await fetch(CLAUDE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: PROMPT(selectedType, finalText) }]
+      })
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API error ' + res.status); }
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    renderResults(JSON.parse(clean));
+  } catch(e) {
+    showErr('Error: ' + e.message);
+  } finally {
+    clearInterval(iv); setLoading(false); setStatus('');
+  }
+}
+
+function showErr(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg; b.style.display = 'block';
+}
+function setStatus(msg) { document.getElementById('loadingStatus').textContent = msg; }
+function setLoading(on) {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = on;
+  document.getElementById('btnIcon').textContent = on ? '' : '🔍';
+  document.getElementById('btnText').textContent = on ? LOADING[0] : 'Analisis Polis Sekarang';
+  if (on) {
+    btn.innerHTML = `<span class="spin"></span><span id="btnText">${LOADING[0]}</span>`;
+  } else {
+    btn.innerHTML = `<span id="btnIcon">🔍</span><span id="btnText">Analisis Polis Sekarang</span>`;
+  }
+  document.getElementById('loadingBar').classList.toggle('show', on);
+}
+
+function rc(r){ return r==='TINGGI'?'#c8321a':r==='SEDANG'?'#d97706':'#15803d'; }
+function rcbg(r){ return r==='TINGGI'?'#fff0ed':r==='SEDANG'?'#fffbeb':'#f0fdf4'; }
+function sc(s){ return s==='BAHAYA'?'#c8321a':s==='PERHATIAN'?'#d97706':'#15803d'; }
+function scbg(s){ return s==='BAHAYA'?'#fff0ed':s==='PERHATIAN'?'#fffbeb':'#f0fdf4'; }
+function vc(v){ return v==='Layak'?'#15803d':v==='Perlu Negosiasi'?'#d97706':'#c8321a'; }
+function vcbg(v){ return v==='Layak'?'#f0fdf4':v==='Perlu Negosiasi'?'#fffbeb':'#fff0ed'; }
+
+function renderResults(d) {
+  const el = document.getElementById('results');
+  const vcol = vc(d.kesimpulan), vbg = vcbg(d.kesimpulan);
+  const scol = d.skor_transparansi>=70?'#15803d':d.skor_transparansi>=40?'#d97706':'#c8321a';
+  const sbg  = d.skor_transparansi>=70?'#f0fdf4':d.skor_transparansi>=40?'#fffbeb':'#fff0ed';
+  const R=40, C=2*Math.PI*R, fill=(d.skor_transparansi/100)*C;
+
+  const findingsHTML = (d.temuan||[]).map(f=>`
+    <div class="finding" style="border-left-color:${rc(f.risiko)}">
+      <div class="finding-head">
+        <span class="risk-pill" style="background:${rcbg(f.risiko)};color:${rc(f.risiko)}">${f.risiko}</span>
+        <span class="finding-title">${f.kategori}</span>
+      </div>
+      <p class="finding-desc">${f.deskripsi}</p>
+      <div class="finding-grid">
+        <div class="sub-box">
+          <div class="sub-label">Dampak Finansial</div>
+          <div class="sub-val" style="color:#92400e">${f.dampak}</div>
+        </div>
+        <div class="sub-box">
+          <div class="sub-label">Rekomendasi</div>
+          <div class="sub-val" style="color:#166534">${f.rekomendasi}</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const tableRows = (d.cek_biaya||[]).map(b=>`
+    <tr>
+      <td style="font-weight:500;color:var(--text)">${b.nama}</td>
+      <td style="color:var(--muted)">${b.wajar}</td>
+      <td style="font-weight:600">${b.terdeteksi}</td>
+      <td><span class="status-pill" style="background:${scbg(b.status)};color:${sc(b.status)}">${b.status}</span></td>
+    </tr>`).join('');
+
+  const qHTML = (d.pertanyaan_agen||[]).map((q,i)=>`
+    <div class="q-item">
+      <div class="q-num">${i+1}</div>
+      <div class="q-text">${q}</div>
+    </div>`).join('');
+
+  el.innerHTML = `
+  <div class="fade-in">
+
+    <div class="result-header">
+      <div class="score-card">
+        <div class="score-label">Skor Transparansi</div>
+        <svg width="120" height="120" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="${R}" fill="none" stroke="${sbg}" stroke-width="10"/>
+          <circle cx="55" cy="55" r="${R}" fill="none" stroke="${scol}" stroke-width="10"
+            stroke-dasharray="${fill} ${C}" stroke-linecap="round" transform="rotate(-90 55 55)"
+            style="transition:stroke-dasharray 1s ease"/>
+          <text x="55" y="51" text-anchor="middle" fill="${scol}" font-size="24" font-weight="700" font-family="Playfair Display,serif">${d.skor_transparansi}</text>
+          <text x="55" y="65" text-anchor="middle" fill="#9a9390" font-size="9" font-family="Plus Jakarta Sans,sans-serif">/100</text>
+        </svg>
+        <div class="verdict" style="background:${vbg};color:${vcol}">${d.kesimpulan}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Ringkasan Analisis</div>
+        <p class="summary-text">${d.ringkasan}</p>
+        <div class="meta-row">
+          <span class="meta-tag">🏷 ${d.jenis_produk}</span>
+          <span class="meta-tag danger">💸 ~${d.total_biaya_persen}% premi → biaya</span>
+          <span class="meta-tag">🔎 ${(d.temuan||[]).length} temuan</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fade-in" style="animation-delay:.1s">
+      <div class="card-head">
+        <div class="card-title"><span class="card-title-dot"></span>Temuan Biaya &amp; Risiko</div>
+      </div>
+      <div class="card-body" style="padding-bottom:14px">
+        ${findingsHTML || '<p style="color:var(--muted);font-size:13px">Tidak ada temuan spesifik terdeteksi.</p>'}
+      </div>
+    </div>
+
+    ${tableRows ? `
+    <div class="card fade-in" style="animation-delay:.2s">
+      <div class="card-head">
+        <div class="card-title"><span class="card-title-dot"></span>Cek Biaya vs. Standar Industri</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Jenis Biaya</th><th>Range Wajar</th><th>Terdeteksi</th><th>Status</th></tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>` : ''}
+
+    ${qHTML ? `
+    <div class="card fade-in" style="animation-delay:.3s">
+      <div class="card-head">
+        <div class="card-title"><span class="card-title-dot"></span>Pertanyaan Wajib ke Agen</div>
+      </div>
+      <div class="card-body" style="padding-bottom:16px">${qHTML}</div>
+    </div>` : ''}
+
+  </div>`;
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>
