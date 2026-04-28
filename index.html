@@ -378,6 +378,15 @@ footer {
         <button class="file-remove" onclick="removeFile(event)" title="Hapus file">✕</button>
       </div>
 
+      <!-- API Key Input -->
+      <div style="margin-top:20px;margin-bottom:4px">
+        <div class="type-label" style="margin-bottom:8px">Claude API Key</div>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..."
+          style="width:100%;padding:10px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13px;outline:none;color:var(--text);transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--border)'">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">🔒 Key hanya tersimpan di browser Anda, tidak dikirim ke server lain selain Anthropic.</div>
+      </div>
+
       <!-- OR divider + text fallback -->
       <div class="or-divider">atau ketik / paste teks polis secara manual</div>
       <textarea id="policyText" placeholder="Paste ringkasan polis, brosur produk, atau deskripsi asuransi di sini...
@@ -409,9 +418,7 @@ Contoh:
 </div>
 
 <script>
-// ─── GANTI DENGAN CLAUDE API KEY ANDA ───────────────────────────
-const CLAUDE_API_KEY = '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';
-// ────────────────────────────────────────────────────────────────
+// API key dibaca dari input user saat analyze()
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; // JANGAN GANTI BARIS INI
 
@@ -529,7 +536,8 @@ async function analyze() {
   const errBox = document.getElementById('errorBox');
   errBox.style.display = 'none';
 
-  if (CLAUDE_API_KEY === 'GANTI_DENGAN_API_KEY_ANDA') return showErr('API Key belum diisi.');
+  const CLAUDE_API_KEY = document.getElementById('apiKeyInput').value.trim();
+  if (!CLAUDE_API_KEY) return showErr('Masukkan Claude API Key terlebih dahulu.');
   if (!finalText) return showErr('Upload file PDF atau ketik teks polis terlebih dahulu.');
 
   setLoading(true);
@@ -548,7 +556,7 @@ async function analyze() {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: PROMPT(selectedType, finalText) }]
       })
     });
@@ -560,7 +568,7 @@ async function analyze() {
   } catch(e) {
     showErr('Error: ' + e.message);
   } finally {
-    clearInterval(iv); setLoading(false); setStatus('');
+    clearInterval(iv); setLoading(false, true); setStatus('');
   }
 }
 
@@ -569,13 +577,16 @@ function showErr(msg) {
   b.textContent = msg; b.style.display = 'block';
 }
 function setStatus(msg) { document.getElementById('loadingStatus').textContent = msg; }
-function setLoading(on) {
+function setLoading(on, done) {
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = on;
-  document.getElementById('btnIcon').textContent = on ? '' : '🔍';
-  document.getElementById('btnText').textContent = on ? LOADING[0] : 'Analisis Polis Sekarang';
   if (on) {
     btn.innerHTML = `<span class="spin"></span><span id="btnText">${LOADING[0]}</span>`;
+  } else if (done) {
+    btn.innerHTML = `<span id="btnIcon">✅</span><span id="btnText">Analisis Selesai</span>`;
+    setTimeout(() => {
+      btn.innerHTML = `<span id="btnIcon">🔍</span><span id="btnText">Analisis Polis Sekarang</span>`;
+    }, 3000);
   } else {
     btn.innerHTML = `<span id="btnIcon">🔍</span><span id="btnText">Analisis Polis Sekarang</span>`;
   }
